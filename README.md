@@ -1,18 +1,40 @@
 # FINN — financial investment agent (mobile-first PWA)
 
-> Status: **skeleton**. No features yet. Pieces that exist and are tested: the single LLM module
+> Status: push digest working (RELIANCE snapshot). Pull side not built.
 > (`backend/app/llm.py`) and the snapshot-fallback fetcher (`backend/app/fetch.py`).
 
 ## Quickstart
 
+### Windows (PowerShell, no `make` needed)
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+cd ..
+Copy-Item .env.example .env      # LLM keys are optional; the digest runs without them
+
+cd backend
+python -m pytest -q              # backend tests, no network or keys needed
+python -m ingest.prices
+python -m ingest.announcements --tickers RELIANCE
+python -m ingest.fundamentals RELIANCE
+uvicorn app.digest_main:app --port 8000
+```
+
+Open `http://localhost:8000`. For a phone, use `http://<your-LAN-ip>:8000` on the same Wi-Fi.
+
+### macOS / Linux (with `make`)
+
 ```bash
 make setup        # venv + pip + npm install; copies .env.example -> .env
-# edit .env: set LLM_CHEAP_* (and LLM_STRONG_*) -- optional, tests and the UI shell run without keys
-make test         # 68 backend tests, no network or keys needed
-make dev          # API :8000 + Vite :5173 (open http://<your-LAN-ip>:5173 on a phone)
+make test         # backend tests, no network or keys needed
 make smoke        # one real LLM call; run twice, second must print cached=True
-make serve        # production-like: built PWA served by FastAPI on :8000
 make help         # everything else
+```
+
+The Makefile targets map one-to-one to the PowerShell commands above, so Windows users can read the Makefile and run the same lines by hand.
 ```
 
 ## Architecture
@@ -92,13 +114,17 @@ frontend/src/{App,api,main}.tsx|ts
 | 9 | 2026-11-15 | Ingest is offline batch CLIs, not request-time fetches | Demo latency/failure never depends on BSE/NSE/Yahoo; cost: data is as fresh as the last run. |
 | 10 | 2026-11-15 | BSE first, NSE fallback, then snapshot; empty result ≠ failure | A quiet company legitimately has no filings; only errors trigger fallback. |
 | 11 | 2026-11-15 | Stdlib HTMLParser for screener, no bs4 | One less dependency; parser is small and unit-tested. Cost: more code than bs4 selectors. |
-| 12 | | _Add: interaction model chosen (chat vs. feed vs. voice) and why_ | |
-| 13 | | _Add: priority map Category → alert/high/normal/collapsed_ | |
-| 14 | | _Add: what the cheap vs. strong tier does_ | |
+| 12 | 2026-11-15 | Feed-first interaction: a ranked digest, with research planned as a tap-through from a card | The brief is about filtering, so the feed shows what matters without a question. Chat comes after a tap. Cost: the copilot sheet isn't built yet. |
+| 13 | 2026-11-15 | Priority map: results 80, management_change 65, M&A 55, fund_raise 45. The `priority` column stores 3/2/1/0 (alert/high/normal/collapsed), derived from the score | Hand-set weights in one place (`WEIGHT`, `BONUS`) are easy to explain and tune. Cost: weights are judgment calls, not learned. |
+| 14 | 2026-11-15 | Cheap tier for bulk extraction and classification fallback; strong tier for promise-vs-delivered reasoning | Routes spend to where reasoning matters. Cost: designed in `llm.py` but not used yet, since the digest is rule-based. |
+| 15 | 2026-11-15 | No LLM in the digest path: classification, scoring and "why it matters" are rules | Fast, free, auditable; an investor can see why something scored 80. Cost: rules miss unusual wording. |
+| 16 | 2026-11-15 | Digest "now" anchors to the newest filing, not the wall clock | A quiet week would otherwise give an empty feed. Cost: freshness depends on the last snapshot. |
+| 17 | 2026-11-15 | Same ticker + same IST date + same category collapses into one card; other PDFs go under "related" | A results filing and its board outcome are one event. Cost: lead card is the longest subject, so a terse but better title can lose. |
+| 18 | 2026-11-15 | Hand-built snapshot of real RELIANCE filings as the demo data path | BSE/NSE returned 403 from the build network. Cost: one ticker, six filings, not a live feed. |
 
 ## Known risks / unverified
 
-- **Ingest endpoints are UNVERIFIED against live servers.** BSE/NSE URLs, params and JSON field names and screener.in's HTML structure are from memory (the build sandbox had no internet); parsers are tested only on hand-written samples in `backend/tests/fixtures/`. Passing tests prove the logic, not compatibility. First action on a networked machine: `make refresh-announcements T=RELIANCE` with `-v`, `make ingest-fundamentals T=RELIANCE`, and fix field names if output is empty.
+- **Ingest endpoints are UNVERIFIED against live servers.** Live BSE/NSE returned 403 from the build network. The snapshot path is the tested demo path. The screener.in and BSE PDF downloads were verified live for (19 tickers, RELIANCE documents). The BSE/NSE parsers are tested against hand-written samples only.
 - **`bse_code` values in `portfolio.yaml` are from memory.** A wrong code silently fetches another company's filings. Check each against bseindia.com (or the BSE `SLONGNAME` field).
 - BSE PDF links use the `AttachLive` path; older filings may live under `AttachHis`.
 - **Not verified in this scaffold:** `npm install`, `npm run build`, `make setup`, Docker build, and booting FastAPI were *not* run (no network when scaffolded). Python tests were run and pass. Expect small version fixes on first install.
