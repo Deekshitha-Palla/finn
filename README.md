@@ -1,146 +1,308 @@
-# FINN — financial investment agent (mobile-first PWA)
+\# FINN: a filtering layer for investors
 
-> Status: push digest working (RELIANCE snapshot). Pull side not built.
-> (`backend/app/llm.py`) and the snapshot-fallback fetcher (`backend/app/fetch.py`).
 
-## Quickstart
 
-### Windows (PowerShell, no `make` needed)
+> Most of what a listed company files doesn't matter. FINN's job is to bury it and put the few things that do in front of you, with the reason attached.
+
+
+
+\*\*Live demo:\*\* \[Render link] (free tier, first load can take about 30s to wake)
+
+\*\*Screen recording (90s):\*\* \[link]
+
+\*\*Built for:\*\* ENAM AI Engineer Build Challenge
+
+
+
+\---
+
+
+
+\## What this is
+
+
+
+FINN is a mobile-first investor feed. This submission ships the \*\*push side\*\*: a ranked digest of corporate filings over a window you choose (24h, 3d, 7d, 30d).
+
+
+
+\- \*\*Material items lead.\*\* Results and fund-raises rank at the top, each with a score and a one-line reason.
+
+\- \*\*Routine items collapse.\*\* Investor-meet intimations and similar paperwork sit in a collapsed group, so nothing is hidden but nothing competes for attention.
+
+\- \*\*Duplicates merge.\*\* A results filing and its board-meeting outcome describe one event, so they appear as one card, with the other PDFs listed under "related".
+
+\- \*\*Every score is explainable.\*\* Example: the 30 Oct RELIANCE results card scores \*\*80 = 60 (category) + 20 (results bonus)\*\*, and the card says so.
+
+
+
+\## Try it
+
+
+
+\### Live
+
+Open the link above on your phone. It opens on the 30-day view, where the real content is.
+
+
+
+\### Locally (Windows PowerShell)
+
+
 
 ```powershell
+
 cd backend
+
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+
+.\\.venv\\Scripts\\Activate.ps1
+
 python -m pip install -r requirements-dev.txt
-cd ..
-Copy-Item .env.example .env      # LLM keys are optional; the digest runs without them
 
-cd backend
-python -m pytest -q              # backend tests, no network or keys needed
-python -m ingest.prices
-python -m ingest.announcements --tickers RELIANCE
-python -m ingest.fundamentals RELIANCE
-uvicorn app.digest_main:app --port 8000
+uvicorn app.digest\_main:app --port 8000
+
 ```
 
-Open `http://localhost:8000`. For a phone, use `http://<your-LAN-ip>:8000` on the same Wi-Fi.
 
-### macOS / Linux (with `make`)
+
+Open `http://localhost:8000`, then use your browser's device toolbar at 390px, or open it on your phone via your PC's LAN IP.
+
+
+
+\### Locally (macOS / Linux)
+
+
 
 ```bash
-make setup        # venv + pip + npm install; copies .env.example -> .env
-make test         # backend tests, no network or keys needed
-make smoke        # one real LLM call; run twice, second must print cached=True
-make help         # everything else
-```
 
-The Makefile targets map one-to-one to the PowerShell commands above, so Windows users can read the Makefile and run the same lines by hand.
-```
+cd backend \&\& python3 -m venv .venv \&\& source .venv/bin/activate
 
-## Architecture
+pip install -r requirements-dev.txt
+
+uvicorn app.digest\_main:app --port 8000
 
 ```
-frontend/ (React + Vite + vite-plugin-pwa)  ──/api──▶  backend/ (FastAPI)
-                                                         ├─ routers/   push.py, pull.py
-                                                         ├─ (reads SQLite + data/docs; never fetches at request time)
-                                                         ├─ llm.py     ONE module, versioned prompts, SQLite cache + cost log
-                                                         ├─ db.py      SQLite (finn.db)
-                                                         └─ vectorstore.py  Chroma (primary-source chunks only)
 
-backend/ingest/   (CLI batch jobs; the only code that touches the network, besides llm.py)
-   prices.py         yfinance EOD → SQLite, 20-session volume baseline   (snapshot via fetch.cached_fetch)
-   announcements.py  BSE API → NSE → data/snapshots/announcements.json    (own snapshot, see below)
-   fundamentals.py   screener.in → data/docs/<TICKER>/*.pdf + manifest.json
-   portfolio.yaml    the 20 demo tickers (+ BSE scrip codes)
-```
 
-Two invariants, enforced by `tests/test_invariants.py`:
 
-1. **Only `app/llm.py` talks to a model provider.** Everything else calls `get_llm().run(Prompt, payload)`.
-2. **Only `ingest/*` (and `llm.py`) touch the network.** Request handlers read local state, so the UI can never hang on a dead exchange.
+\### API
 
-### LLM module
-- Cache key = `<prompt>:<version>:<sha256(model + canonical_input)>`. Bump `Prompt.version` to invalidate.
-- Two tiers via env: `cheap` (bulk extraction/classification) and `strong` (reasoning). Any OpenAI-compatible endpoint.
-- Every call, including cache hits and failures, is a row in `llm_log` (tokens, cost, latency, error). `GET /api/usage` summarises it.
-- `LLM_CACHE_ONLY=1` → never calls a model. Misses raise `LLMUnavailable`; callers must degrade gracefully.
-- `make cache-export` writes `backend/data/seed/llm_cache.jsonl`; it is imported at startup so ephemeral hosts keep the demo answers.
 
-### Fetch fallback
-`app/fetch.py::cached_fetch` (used by prices): live (with timeout) → write snapshot → return; on failure/empty/timeout/`FINN_OFFLINE=1` → last snapshot; nothing → `SnapshotMissing`.
-Announcements use one shared file, `data/snapshots/announcements.json`, refreshed by `make refresh-announcements`.
-Snapshots live in `backend/data/snapshots/` and are **committed**.
-
-### Ingest (run from the repo root)
-
-```bash
-make ingest-prices                          # 20 tickers, last 90 days; T="TCS INFY" to limit
-make ingest-announcements                   # BSE → NSE → snapshot; options: python -m ingest.announcements --help
-make refresh-announcements                  # live → data/snapshots/announcements.json  (then git add it)
-make ingest-fundamentals T=RELIANCE         # 3 annual reports + 6 concall transcripts → backend/data/docs/RELIANCE/
-python -m ingest.fundamentals inspect page.html   # debug the screener parser on a saved page
-```
-
-All are idempotent (upserts / skip-if-valid-PDF) and exit non-zero if any ticker failed.
-Notes: `avg_vol_20` on a price row = mean volume of the 20 sessions *before* that date (NULL until 20 exist).
-Ingest never overwrites our own `category / priority / summary` columns on announcements.
-`data/docs/` is git-ignored (large PDFs); extract/chunk text into the snapshot layer before deploying.
-
-## Repo layout
 
 ```
-Makefile  Dockerfile  .env.example
-backend/app/{main,config,db,llm,prompts,fetch,classify,vectorstore}.py
-backend/app/routers/
-backend/ingest/{prices,announcements,fundamentals,common}.py   backend/portfolio.yaml
-backend/scripts/{smoke,refresh_announcements_snapshot,cache_export}.py
-backend/tests/
-backend/data/{snapshots,seed}/     committed demo state
-frontend/src/{App,api,main}.tsx|ts
+
+GET /api/digest?window=24h|3d|7d|30d
+
+\-> { "ranked": \[...], "routine": \[...], "now": "..." }
+
 ```
 
-## Decisions log
 
-| # | Date | Decision | Why / trade-off |
-|---|------|----------|-----------------|
-| 1 | 2026-11-15 | FastAPI + SQLite + Chroma; React/Vite PWA | Fast to build, zero infra, free to host. PWA = installable on a phone with no app-store step. |
-| 2 | 2026-11-15 | One container serves API + built PWA | One deploy, no CORS, one URL to send reviewers. Cost: slower rebuilds than split hosting. |
-| 3 | 2026-11-15 | All LLM calls through `llm.py`; versioned `Prompt` objects | Single place for caching, cost logging, tiering, and kill-switches. Guard test prevents bypass. |
-| 4 | 2026-11-15 | Model is hashed into the cache key (spec was hash(input)+version) | Changing model must not serve another model's answer. Version still invalidates per-prompt. |
-| 5 | 2026-11-15 | Provider-agnostic OpenAI-compatible HTTP via httpx, no vendor SDK | Swap Groq/Gemini/Ollama by env only; fewer deps. Cost: no provider-specific features. |
-| 6 | 2026-11-15 | Snapshots committed to git | Demo survives dead APIs, blocked IPs, ephemeral disks. Cost: repo carries some data files. |
-| 7 | 2026-11-15 | Stdlib `sqlite3`, no ORM; stdlib config instead of pydantic-settings | Fewer moving parts; tests run without installs. |
-| 8 | 2026-11-15 | Service worker never caches `/api` | Freshness and fallback are the backend's job; avoids stale-UI confusion. |
-| 9 | 2026-11-15 | Ingest is offline batch CLIs, not request-time fetches | Demo latency/failure never depends on BSE/NSE/Yahoo; cost: data is as fresh as the last run. |
-| 10 | 2026-11-15 | BSE first, NSE fallback, then snapshot; empty result ≠ failure | A quiet company legitimately has no filings; only errors trigger fallback. |
-| 11 | 2026-11-15 | Stdlib HTMLParser for screener, no bs4 | One less dependency; parser is small and unit-tested. Cost: more code than bs4 selectors. |
-| 12 | 2026-11-15 | Feed-first interaction: a ranked digest, with research planned as a tap-through from a card | The brief is about filtering, so the feed shows what matters without a question. Chat comes after a tap. Cost: the copilot sheet isn't built yet. |
-| 13 | 2026-11-15 | Priority map: results 80, management_change 65, M&A 55, fund_raise 45. The `priority` column stores 3/2/1/0 (alert/high/normal/collapsed), derived from the score | Hand-set weights in one place (`WEIGHT`, `BONUS`) are easy to explain and tune. Cost: weights are judgment calls, not learned. |
-| 14 | 2026-11-15 | Cheap tier for bulk extraction and classification fallback; strong tier for promise-vs-delivered reasoning | Routes spend to where reasoning matters. Cost: designed in `llm.py` but not used yet, since the digest is rule-based. |
-| 15 | 2026-11-15 | No LLM in the digest path: classification, scoring and "why it matters" are rules | Fast, free, auditable; an investor can see why something scored 80. Cost: rules miss unusual wording. |
-| 16 | 2026-11-15 | Digest "now" anchors to the newest filing, not the wall clock | A quiet week would otherwise give an empty feed. Cost: freshness depends on the last snapshot. |
-| 17 | 2026-11-15 | Same ticker + same IST date + same category collapses into one card; other PDFs go under "related" | A results filing and its board outcome are one event. Cost: lead card is the longest subject, so a terse but better title can lose. |
-| 18 | 2026-11-15 | Hand-built snapshot of real RELIANCE filings as the demo data path | BSE/NSE returned 403 from the build network. Cost: one ticker, six filings, not a live feed. |
 
-## Known risks / unverified
+Each item has `ticker, ts, subject, category, score, why\_it\_matters, pdf\_url, related`.
 
-- **Ingest endpoints are UNVERIFIED against live servers.** Live BSE/NSE returned 403 from the build network. The snapshot path is the tested demo path. The screener.in and BSE PDF downloads were verified live for (19 tickers, RELIANCE documents). The BSE/NSE parsers are tested against hand-written samples only.
-- **`bse_code` values in `portfolio.yaml` are from memory.** A wrong code silently fetches another company's filings. Check each against bseindia.com (or the BSE `SLONGNAME` field).
-- BSE PDF links use the `AttachLive` path; older filings may live under `AttachHis`.
-- **Not verified in this scaffold:** `npm install`, `npm run build`, `make setup`, Docker build, and booting FastAPI were *not* run (no network when scaffolded). Python tests were run and pass. Expect small version fixes on first install.
-- Frontend dependency versions are caret ranges chosen from memory; `vite-plugin-pwa` must support the installed Vite major.
-- Python deps are unpinned; run `make freeze` after the first good install.
-- **NSE endpoints often block cloud/datacenter IPs and need cookies.** Plan on committed snapshots as the demo path.
-- **Chroma's default embedder downloads a model on first use** (fails on a cold, offline host). Pre-warm in the Docker build or supply an explicit embedding function before relying on it.
-- Free-tier model names and rate limits change; confirm in the provider console. Base URLs in `.env.example` are examples to verify.
-- Free hosts (Render/HF Spaces) may sleep or have ephemeral disks; hence snapshots + cache seed in git.
-- PWA icons are placeholders.
 
-## Submission checklist (from the brief)
 
-- [ ] Deployed link that works on a phone
-- [ ] GitHub repo
-- [ ] AI build history (export chats / share links)
-- [ ] Covering-email writeup: what was built, key decisions & trade-offs, what was left out, next steps
-- [ ] Email to assessment@enam.com, subject: `IIT Delhi – AI Engineer - 2027`
-- [ ] Deadline: 15 Nov 2026
+\### Tests
+
+
+
+```
+
+cd backend \&\& python -m pytest -q
+
+```
+
+
+
+Covers the ingest parsing, retries and fallbacks, plus the digest's classification, collapsing, ranking and window filtering.
+
+
+
+\---
+
+
+
+\## How it works
+
+
+
+```
+
+BSE / NSE filings ─┐
+
+&#x20;                  ├─► ingest (live → fallback → committed snapshot) ─► SQLite
+
+yfinance EOD ──────┘                                                      │
+
+&#x20;                                                                         ▼
+
+screener.in PDFs ─► ingest/fundamentals ─► data/docs/<TICKER>/     digest service
+
+&#x20;                                                                 (classify → collapse
+
+&#x20;                                                                  → score → group)
+
+&#x20;                                                                         │
+
+&#x20;                                                                         ▼
+
+&#x20;                                                             FastAPI  ─►  mobile feed
+
+```
+
+
+
+| Layer | What it does |
+
+|---|---|
+
+| `backend/ingest/` | Prices (yfinance), announcements (BSE → NSE → snapshot), annual reports and concall PDFs (screener.in). Idempotent, with retries and fallbacks. |
+
+| `backend/app/services/digest.py` | Classifies filings into the 17 reference categories, collapses duplicates, scores, and splits ranked from routine. |
+
+| `backend/app/routers/digest.py` | The `/api/digest` endpoint. |
+
+| `frontend/feed/` | Single-file mobile page: window picker, score chips, expandable routine group, results card. |
+
+
+
+\---
+
+
+
+\## Decisions and trade-offs
+
+
+
+| Decision | Why | What it costs |
+
+|---|---|---|
+
+| \*\*No LLM in the digest path\*\* | Rules are fast, free and auditable. An investor can see exactly why something scored 80. | Rules won't catch unusual wording. Fine for an alert feed. |
+
+| \*\*"Now" anchors to the newest filing, not the wall clock\*\* | A 24h window on a quiet day would be empty and the demo would look broken. | Freshness depends on the last snapshot. |
+
+| \*\*Duplicate filings collapse into one card\*\* | A results filing and its board outcome are one event. Showing both is noise. | The lead card is the longest subject. Nothing is dropped, since the rest sit under "related". |
+
+| \*\*Routine group, collapsed\*\* | Most filings are noise. Hiding them in one tap beats ranking them equally. | Category weights are hand-set (`WEIGHT` and `BONUS` at the top of the service) and easy to tune. |
+
+| \*\*Committed snapshot as the demo data path\*\* | BSE and NSE returned 403 from my build network, and exchange feeds often block cloud IPs. A demo shouldn't depend on a live scrape. | The demo data is a snapshot of real RELIANCE filings, not a live feed. |
+
+| \*\*Ingest and digest are separate\*\* | The digest reads SQLite and never touches the network, so it's fast and testable. | Refreshing data is two steps: ingest, then reload. |
+
+| \*\*Opens on 30 days\*\* | With the anchored "now", shorter windows are sparse. | Tight windows need a manual tap. |
+
+
+
+\---
+
+
+
+\## What's built, and what isn't
+
+
+
+I'd rather you see the gaps from me than find them.
+
+
+
+\*\*Working\*\*
+
+\- Push digest with windows, ranking, collapsing, routine grouping and rule-based reasons
+
+\- EOD price and volume ingest for 19 NSE tickers, with a volume baseline (20-day average, excluding the current day)
+
+\- Announcement ingest with live → fallback → snapshot logic
+
+\- Annual report and concall PDF download from screener.in (tested live on RELIANCE: 9 documents)
+
+\- A single LLM module with caching and cost logging, ready for the pull side. It isn't used in the digest.
+
+
+
+\*\*Not built\*\*
+
+\- \*\*Only RELIANCE's filings are loaded.\*\* The brief asks for 15 to 20 companies. I went deep on one ticker rather than thin across many.
+
+\- \*\*Results numbers (Revenue, EBITDA, PBT, PAT with QoQ and YoY) aren't extracted yet.\*\* The results card shows the layout with placeholders, so the design target is visible but the numbers aren't there.
+
+\- \*\*Price and volume aren't wired into the score or alerts yet.\*\* The data is ingested, but triggers and thresholds are still to do.
+
+\- \*\*The pull side isn't built\*\*, including the promise-vs-delivered analysis, which I consider the most valuable piece of the brief.
+
+\- \*\*Management-change enrichment\*\* isn't built.
+
+\- \*\*Live exchange feeds\*\* couldn't be reached from my build network.
+
+
+
+\## Next steps
+
+
+
+1\. \*\*Results extractor\*\* from the 30 Oct filing: rules and table parsing first, an LLM only as a fallback, with a PBT − tax ≈ PAT check and low-confidence flags instead of guesses.
+
+2\. \*\*More tickers\*\*, using a browser-assisted snapshot refresh for the exchange feeds.
+
+3\. \*\*Threshold alerts\*\* on volume and price move, with user-set thresholds.
+
+4\. \*\*Promise vs delivered\*\* on the concall transcripts, grounded in primary sources only, with a page citation for every claim.
+
+5\. \*\*Copilot sheet\*\* scoped to the open card, so a tap leads straight into research.
+
+
+
+\---
+
+
+
+\## Repo layout
+
+
+
+```
+
+backend/
+
+&#x20; app/            config, db, classify, llm, digest service + router
+
+&#x20; ingest/         prices, announcements, fundamentals
+
+&#x20; scripts/        snapshot builders, smoke test, cache export
+
+&#x20; tests/
+
+&#x20; data/           SQLite DB, committed snapshots
+
+frontend/feed/    mobile digest page
+
+docs/
+
+```
+
+
+
+\## Built with
+
+
+
+Python, FastAPI, SQLite, yfinance, httpx. Built with AI coding assistants. The conversation history is attached to the submission email.
+
+
+
+Full architecture notes, invariants and ingest commands: \[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+
+
+\---
+
+
+
+\*Built by Palla Deekshitha(2023CE11034), IIT Delhi.\*
+
+
+
+
+
