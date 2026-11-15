@@ -5,7 +5,7 @@
 
 
 
-\*\*Live demo:\*\* https://finn-spek.onrender.com. (free tier, first load can take about 30s to wake)
+\*\*Live demo:\*\* https://finn-sepk.onrender.com. (free tier, first load can take about 30s to wake)
 
 
 \*\*Built for:\*\* ENAM AI Engineer Build Challenge
