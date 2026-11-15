@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FINN digest</title>
+<style>
+:root{--bg:#eef1f4;--card:#fff;--ink:#101820;--mute:#5b6773;--line:#d9dfe5;--navy:#12355b;--tint:#dbe6f3}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1218;--card:#151c24;--ink:#e8edf2;--mute:#93a0ad;--line:#25303b;--navy:#8fb6ea;--tint:#1d2c3f}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:390px;margin:0 auto;padding:18px 14px 48px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+.asof{color:var(--mute);font-size:12px;margin:2px 0 14px;min-height:17px}
+.win{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+button{font:inherit;color:inherit}
+.win button{padding:9px 0;border:1px solid var(--line);background:var(--card);border-radius:8px;font-size:13px;cursor:pointer}
+.win button[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:var(--bg);font-weight:600}
+button:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 12px 10px;margin-bottom:10px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.who b{font-size:13px}.who span{display:block;font-size:12px;color:var(--mute)}
+.chip{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;min-width:42px;text-align:center;padding:4px 8px;border-radius:6px}
+.t3{background:var(--navy);color:var(--bg)}.t2{background:var(--tint);color:var(--navy)}.t1,.t0{border:1px solid var(--line);color:var(--mute)}
+h2{font-size:15px;font-weight:600;margin:8px 0 4px}
+h2 a{color:inherit;text-decoration-color:var(--line);text-underline-offset:3px}
+.why{font-size:12px;color:var(--mute)}
+.ph{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0 2px}
+.ph div{border:1px dashed var(--line);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--mute)}
+.ph b{display:block;color:var(--ink);font-size:13px}
+.ph p{grid-column:1/-1;margin:0;font-size:11px;color:var(--mute)}
+details{margin-top:8px;font-size:13px}
+summary{cursor:pointer;color:var(--mute);padding:4px 0}
+.rel{padding:5px 0;border-top:1px solid var(--line)}.rel a{color:var(--ink)}
+.routine{background:transparent;border:1px dashed var(--line);border-radius:10px;padding:2px 12px;margin-top:6px}
+.routine .card{margin:0;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;padding:10px 0}
+.routine .card:first-of-type{border-top:0}
+.empty{color:var(--mute);text-align:center;padding:28px 0;font-size:14px}
+</style>
+<main>
+  <h1>Digest</h1>
+  <div class="asof" id="asof"></div>
+  <div class="win" id="win"></div>
+  <div id="feed"></div>
+</main>
+<script>
+const WINDOWS = [["24h","24 hours"],["3d","3 days"],["7d","7 days"],["30d","30 days"]];
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = ts => new Date(ts).toLocaleString("en-IN", {timeZone:"Asia/Kolkata", day:"numeric", month:"short", hour:"numeric", minute:"2-digit"});
+const fmtDay = ts => new Date(ts).toLocaleDateString("en-IN", {timeZone:"Asia/Kolkata", day:"numeric", month:"short"});
+const tier = s => s >= 60 ? 3 : s >= 40 ? 2 : s >= 20 ? 1 : 0;
+const link = r => /^https?:/.test(r.pdf_url || "") ? `<a href="${esc(r.pdf_url)}" target="_blank" rel="noopener">${esc(r.subject)}</a>` : esc(r.subject);
+const PLACEHOLDER = `<div class="ph">${["Revenue","EBITDA","PBT","PAT"].map(k => `<div><b>${k}</b>QoQ - / YoY -</div>`).join("")}<p>Headline numbers from the filing will appear here.</p></div>`;
+
+const card = i => `<article class="card">
+  <div class="top"><div class="who"><b>${esc(i.ticker)}</b><span>${esc(i.category.replace(/_/g," "))}, ${fmt(i.ts)}</span></div>
+  <span class="chip t${tier(i.score)}" title="${esc(i.why_it_matters)}">${i.score}</span></div>
+  <h2>${link(i)}</h2><div class="why">${esc(i.why_it_matters)}</div>
+  ${i.category === "results" ? PLACEHOLDER : ""}
+  ${i.related.length ? `<details><summary>${i.related.length} related</summary>${i.related.map(r => `<div class="rel">${link(r)}</div>`).join("")}</details>` : ""}
+</article>`;
+
+async function load(w) {
+  document.querySelectorAll("#win button").forEach(b => b.setAttribute("aria-pressed", b.dataset.w === w));
+  const feed = document.getElementById("feed");
+  try {
+    const d = await (await fetch(`/api/digest?window=${w}`)).json();
+    document.getElementById("asof").textContent = d.now ? `Up to ${fmt(d.now)} IST` : "";
+    feed.innerHTML =
+      (d.ranked.length ? d.ranked.map(card).join("") : `<div class="empty">Nothing material in this window.${d.latest_material ? `<br>Latest material filing: ${fmtDay(d.latest_material.ts)}, ${esc(d.latest_material.category.replace(/_/g," "))}` : ""}</div>`) +
+      (d.routine.length ? `<details class="routine"><summary>Routine (${d.routine.length})</summary>${d.routine.map(card).join("")}</details>` : "");
+  } catch (e) {
+    feed.innerHTML = `<div class="empty">Could not load the digest.</div>`;
+  }
+}
+
+document.getElementById("win").innerHTML = WINDOWS.map(([k, l]) => `<button data-w="${k}">${l}</button>`).join("");
+document.getElementById("win").onclick = e => e.target.dataset.w && load(e.target.dataset.w);
+load("30d"); // demo data is a month old relative to its newest row, so open wide
+</script>
