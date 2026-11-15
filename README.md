@@ -1,14 +1,12 @@
 \# FINN: a filtering layer for investors
 
 
-
 > Most of what a listed company files doesn't matter. FINN's job is to bury it and put the few things that do in front of you, with the reason attached.
 
 
 
-\*\*Live demo:\*\* \[Render link] (free tier, first load can take about 30s to wake)
+\*\*Live demo:\*\* https://finn-spek.onrender.com. (free tier, first load can take about 30s to wake)
 
-\*\*Screen recording (90s):\*\* \[link]
 
 \*\*Built for:\*\* ENAM AI Engineer Build Challenge
 
@@ -18,7 +16,7 @@
 
 
 
-\## What this is
+\## What this is?
 
 
 
@@ -220,7 +218,31 @@ I'd rather you see the gaps from me than find them.
 
 \- A single LLM module with caching and cost logging, ready for the pull side. It isn't used in the digest.
 
+## Why I built it this way
 
+**Filtering is the product, so the digest uses rules, not an LLM.**
+Scoring, grouping and "why it matters" are deterministic. That makes every ranking explainable (80 = 60 category + 20 results bonus), free to run, and testable. I'd spend LLM calls where rules can't reach: reading a results PDF, and judging promises against outcomes.
+
+**Spend is routed by how hard the task is.**
+`llm.py` has a cheap tier for bulk extraction and a strong tier for reasoning, with a cache keyed on prompt version, model and input. Every call, including cache hits and failures, is logged with tokens and cost. The digest makes zero model calls, so a browse costs nothing.
+
+**Request handlers never touch the network.**
+Only ingest jobs and `llm.py` do, and a guard test fails the build if anything else does. A dead exchange can slow a refresh, never a page load.
+
+**The demo can't be broken by someone else's server.**
+BSE and NSE blocked my requests, which is common for exchange feeds. Instead of fighting it, the app falls back to a committed snapshot of real filings, and the ingest tells you which source it used.
+
+**Ingest is built to fail safely.**
+It's idempotent. A refresh that fails for one ticker keeps that ticker's old rows. Nothing is written if every ticker fails. A non-PDF response (like a block page) is never saved as a PDF. The 20-day volume baseline excludes the current day, so "today vs average" isn't compared with itself.
+
+**Plain, boring tools on purpose.**
+FastAPI, SQLite and one container. No ORM, no vendor SDK, an OpenAI-compatible HTTP client so I can swap providers by env var. It deploys free and a reviewer can run it in two minutes.
+
+**Feed first, chat second.**
+Investors shouldn't have to know what to ask. The feed shows what changed, and research starts from a tap on a card.
+
+**I stopped at one ticker done properly.**
+A thin, working slice with honest gaps over a broad one that breaks.
 
 \*\*Not built\*\*
 
