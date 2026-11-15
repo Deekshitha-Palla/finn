@@ -1,0 +1,8 @@
+# Unpinned on purpose (no network when scaffolded). After first `make setup`, run `make freeze` to pin.
+fastapi
+uvicorn[standard]
+httpx
+yfinance
+pyyaml
+chromadb
+pypdf

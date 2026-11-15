@@ -1,0 +1,6 @@
+[
+  {"_note": "HAND-WRITTEN approximation of NSE corporate-announcements output, not a real capture.",
+   "symbol": "RELIANCE", "desc": "Outcome of Board Meeting", "attchmntText": "Board approved financial results for the quarter ended September 30, 2026.", "attchmntFile": "https://nsearchives.nseindia.com/corporate/RELIANCE_14112026163201.pdf", "an_dt": "14-Nov-2026 16:32:01", "sort_date": "2026-11-14 16:32:01", "seq_id": "104500123"},
+  {"symbol": "RELIANCE", "desc": "Analysts/Institutional Investor Meet/Con. Call Updates", "attchmntText": "Schedule of analyst meet", "attchmntFile": "-", "an_dt": "12-Nov-2026 09:00:00", "seq_id": ""},
+  {"symbol": "RELIANCE", "desc": "", "an_dt": "11-Nov-2026 09:00:00"}
+]

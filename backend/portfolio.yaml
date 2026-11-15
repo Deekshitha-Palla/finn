@@ -1,0 +1,27 @@
+# Demo portfolio: 20 NSE-listed companies. ticker = NSE symbol (Yahoo uses <ticker>.NS).
+# bse_code = BSE scrip code, needed for BSE's announcement API.
+#
+# !! bse_code values were written from memory and NOT verified against bseindia.com. Run
+# !! `make ingest-announcements` once and compare the logged company name per ticker; fix any mismatch.
+# `cap` is an approximate bucket for demo variety only (large / mid / small), not a data field.
+companies:
+  - {ticker: RELIANCE,   name: Reliance Industries,   sector: Energy & Conglomerate, cap: large, bse_code: "500325"}
+  - {ticker: TCS,        name: Tata Consultancy Services, sector: IT Services,       cap: large, bse_code: "532540"}
+  - {ticker: HDFCBANK,   name: HDFC Bank,             sector: Private Banks,         cap: large, bse_code: "500180"}
+  - {ticker: INFY,       name: Infosys,               sector: IT Services,           cap: large, bse_code: "500209"}
+  - {ticker: ICICIBANK,  name: ICICI Bank,            sector: Private Banks,         cap: large, bse_code: "532174"}
+  - {ticker: SBIN,       name: State Bank of India,   sector: PSU Banks,             cap: large, bse_code: "500112"}
+  - {ticker: ITC,        name: ITC,                   sector: FMCG,                  cap: large, bse_code: "500875"}
+  - {ticker: LT,         name: Larsen & Toubro,       sector: Infrastructure & Capital Goods, cap: large, bse_code: "500510"}
+  - {ticker: BHARTIARTL, name: Bharti Airtel,         sector: Telecom,               cap: large, bse_code: "532454"}
+  - {ticker: HINDUNILVR, name: Hindustan Unilever,    sector: FMCG,                  cap: large, bse_code: "500696"}
+  - {ticker: SUNPHARMA,  name: Sun Pharmaceutical,    sector: Pharma,                cap: large, bse_code: "524715"}
+  - {ticker: MARUTI,     name: Maruti Suzuki,         sector: Autos,                 cap: large, bse_code: "532500"}
+  - {ticker: BAJFINANCE, name: Bajaj Finance,         sector: NBFC,                  cap: large, bse_code: "500034"}
+  - {ticker: TITAN,      name: Titan Company,         sector: Consumer Discretionary, cap: large, bse_code: "500114"}
+  - {ticker: TATASTEEL,  name: Tata Steel,            sector: Metals,                cap: large, bse_code: "500470"}
+  - {ticker: POLYCAB,    name: Polycab India,         sector: Cables & Electricals,  cap: mid,   bse_code: "542652"}
+  - {ticker: DIXON,      name: Dixon Technologies,    sector: Electronics Mfg,       cap: mid,   bse_code: "540699"}
+  - {ticker: KPITTECH,   name: KPIT Technologies,     sector: Auto Software,         cap: mid,   bse_code: "542651"}
+  - {ticker: CDSL,       name: Central Depository Services, sector: Capital Markets,  cap: mid,   bse_code: "543333"}
+  - {ticker: AARTIIND,   name: Aarti Industries,      sector: Specialty Chemicals,   cap: small, bse_code: "524208"}

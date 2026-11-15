@@ -1,0 +1,10 @@
+{
+  "_note": "HAND-WRITTEN approximation of BSE AnnSubCategoryGetData output, not a real capture.",
+  "Table": [
+    {"NEWSID": "a1b2-0001", "SCRIP_CD": 500325, "NEWSSUB": "Reliance Industries Ltd - 500325 - Outcome of Board Meeting", "HEADLINE": "Board approved unaudited financial results for the quarter ended September 30, 2026", "NEWS_DT": "2026-11-14T16:32:01.347", "DT_TM": "2026-11-14T16:35:00", "CATEGORYNAME": "Result", "SUBCATNAME": "Financial Results", "ATTACHMENTNAME": "a1b2-0001.pdf"},
+    {"NEWSID": "a1b2-0002", "SCRIP_CD": 500325, "NEWSSUB": "Reliance Industries Ltd - 500325 - Announcement under Regulation 30 (LODR)-Change in Management", "HEADLINE": "Appointment of Chief Financial Officer", "NEWS_DT": "2026-11-13T10:05:10", "CATEGORYNAME": "Company Update", "SUBCATNAME": "", "ATTACHMENTNAME": ""},
+    {"NEWSID": "a1b2-0003", "SCRIP_CD": 500325, "NEWSSUB": "Reliance Industries Ltd - 500325 - Trading Window", "HEADLINE": "", "NEWS_DT": "not-a-date", "CATEGORYNAME": "Insider Trading / SAST"},
+    {"NEWSID": "", "SCRIP_CD": 500325, "NEWSSUB": "Intimation of analyst meet", "HEADLINE": "", "NEWS_DT": "2026-11-12T09:00:00", "CATEGORYNAME": "Company Update", "SUBCATNAME": "Analyst / Investor Meet", "ATTACHMENTNAME": "x.pdf"}
+  ],
+  "Table1": [{"ROWCNT": 4}]
+}

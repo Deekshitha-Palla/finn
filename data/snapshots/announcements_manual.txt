@@ -1,0 +1,6 @@
+2026-10-30 | Unaudited Financial Results (Consolidated and Standalone) for quarter and half year ended Sep 30, 2026 | results | https://www.bseindia.com/xml-data/corpfiling/AttachHis/880087f6-7ecc-40a9-8cac-de48d4616b25.pdf
+2026-11-13 | Analyst / Investor Meet - Intimation (Morgan Stanley 25th Annual Asia-Pacific Summit) | investor_meetings | https://www.bseindia.com/xml-data/corpfiling/AttachLive/3f614a9e-94b0-42ef-8145-ba0055ba7be5.pdf
+2026-11-12 | Analyst / Investor Meet - Intimation (JM Financial India Conference) | investor_meetings | https://www.bseindia.com/xml-data/corpfiling/AttachHis/55f9d4f5-8638-4669-abdb-7cc4127221fc.pdf
+2026-11-06 | Analyst / Investor Meet - Intimation (CLSA India Forum) | investor_meetings | https://www.bseindia.com/xml-data/corpfiling/AttachHis/bab324f6-6fab-42fc-8b79-a3881f4fb7c7.pdf
+2026-10-30 | Board Meeting Outcome - Unaudited Financial Results and issuance of Non-Convertible Debentures | results | https://www.bseindia.com/xml-data/corpfiling/AttachHis/9d4cb3ed-a184-4662-91fc-f4112ce354b7.pdf
+2026-10-27 | Board Meeting Intimation - Unaudited Financial Results and raising of funds by issuance of debentures | fund_raise | https://www.bseindia.com/xml-data/corpfiling/AttachHis/5670a3e4-4e3c-489d-9160-455cb124704f.pdf

@@ -1,0 +1,21 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+node_modules/
+frontend/dist/
+dev-dist/
+
+# Runtime state (rebuildable). Snapshots and seed/ ARE committed on purpose.
+backend/data/finn.db*
+backend/data/chroma/
+backend/data/snapshots/**/*.tmp
+backend/data/docs/
+
+handoff.txt
+
+.env
+handoff.txt
+backend/.venv/

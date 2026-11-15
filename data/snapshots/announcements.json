@@ -1,0 +1,69 @@
+{
+  "announcements": [
+    {
+      "id": "de38fbbdf7b3fc90516aaf09199dcda5c5513005",
+      "ticker": "RELIANCE",
+      "ts": "2026-10-30T19:42:49+05:30",
+      "subject": "Unaudited Financial Results (Consolidated and Standalone) for quarter and half year ended Sep 30, 2026",
+      "category_raw": "results",
+      "pdf_url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/880087f6-7ecc-40a9-8cac-de48d4616b25.pdf",
+      "detail": "",
+      "source": "manual_bse_snapshot"
+    },
+    {
+      "id": "620de2b2ed10002f12b1b2035a11b60c03c09fa1",
+      "ticker": "RELIANCE",
+      "ts": "2026-11-13T18:23:17+05:30",
+      "subject": "Analyst / Investor Meet - Intimation (Morgan Stanley 25th Annual Asia-Pacific Summit)",
+      "category_raw": "investor_meetings",
+      "pdf_url": "https://www.bseindia.com/xml-data/corpfiling/AttachLive/3f614a9e-94b0-42ef-8145-ba0055ba7be5.pdf",
+      "detail": "",
+      "source": "manual_bse_snapshot"
+    },
+    {
+      "id": "8d883f79aa67e79172a1631dd402069982467193",
+      "ticker": "RELIANCE",
+      "ts": "2026-11-12T20:22:14+05:30",
+      "subject": "Analyst / Investor Meet - Intimation (JM Financial India Conference)",
+      "category_raw": "investor_meetings",
+      "pdf_url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/55f9d4f5-8638-4669-abdb-7cc4127221fc.pdf",
+      "detail": "",
+      "source": "manual_bse_snapshot"
+    },
+    {
+      "id": "a2e3f31a97c1c52205e153a9cb407bd414afc85a",
+      "ticker": "RELIANCE",
+      "ts": "2026-11-06T19:17:12+05:30",
+      "subject": "Analyst / Investor Meet - Intimation (CLSA India Forum)",
+      "category_raw": "investor_meetings",
+      "pdf_url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/bab324f6-6fab-42fc-8b79-a3881f4fb7c7.pdf",
+      "detail": "",
+      "source": "manual_bse_snapshot"
+    },
+    {
+      "id": "fdb021b3402a13ca94e900928f6e5bb84be38f54",
+      "ticker": "RELIANCE",
+      "ts": "2026-10-30T19:38:05+05:30",
+      "subject": "Board Meeting Outcome - Unaudited Financial Results and issuance of Non-Convertible Debentures",
+      "category_raw": "results",
+      "pdf_url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/9d4cb3ed-a184-4662-91fc-f4112ce354b7.pdf",
+      "detail": "",
+      "source": "manual_bse_snapshot"
+    },
+    {
+      "id": "318a4d7d60679d094ebe136807acb1c3460cc24c",
+      "ticker": "RELIANCE",
+      "ts": "2026-10-27T19:06:47+05:30",
+      "subject": "Board Meeting Intimation - Unaudited Financial Results and raising of funds by issuance of debentures",
+      "category_raw": "fund_raise",
+      "pdf_url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/5670a3e4-4e3c-489d-9160-455cb124704f.pdf",
+      "detail": "",
+      "source": "manual_bse_snapshot"
+    }
+  ],
+  "tickers": {
+    "RELIANCE": {
+      "source": "manual_bse_snapshot"
+    }
+  }
+}
