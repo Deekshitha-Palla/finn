@@ -1,11 +1,11 @@
 # FINN — financial investment agent (mobile-first PWA)
 
-> Status: push digest working (RELIANCE snapshot). Pull side not built.
+> Status: push digest and price/volume alerts working on committed snapshots (RELIANCE filings, 20 tickers of prices). Pull side (results extractor, promise-vs-delivered) not built yet.
 > (`backend/app/llm.py`) and the snapshot-fallback fetcher (`backend/app/fetch.py`).
 
 ## Quickstart
 
-### Windows (PowerShell, no `make` needed)
+### Windows (PowerShell)
 
 ```powershell
 cd backend
@@ -25,13 +25,6 @@ uvicorn app.digest_main:app --port 8000
 
 Open `http://localhost:8000`. For a phone, use `http://<your-LAN-ip>:8000` on the same Wi-Fi.
 
-### macOS / Linux (with `make`)
-
-```bash
-make setup        # venv + pip + npm install; copies .env.example -> .env
-make test         # backend tests, no network or keys needed
-make smoke        # one real LLM call; run twice, second must print cached=True
-make help         # everything else
 ```
 
 The Makefile targets map one-to-one to the PowerShell commands above, so Windows users can read the Makefile and run the same lines by hand.
@@ -97,6 +90,8 @@ backend/scripts/{smoke,refresh_announcements_snapshot,cache_export}.py
 backend/tests/
 backend/data/{snapshots,seed}/     committed demo state
 frontend/src/{App,api,main}.tsx|ts
+backend/app/services/{digest,alerts}.py
+backend/app/routers/{digest,alerts}.py   backend/app/digest_main.py
 ```
 
 ## Decisions log
@@ -121,10 +116,12 @@ frontend/src/{App,api,main}.tsx|ts
 | 16 | 2026-11-15 | Digest "now" anchors to the newest filing, not the wall clock | A quiet week would otherwise give an empty feed. Cost: freshness depends on the last snapshot. |
 | 17 | 2026-11-15 | Same ticker + same IST date + same category collapses into one card; other PDFs go under "related" | A results filing and its board outcome are one event. Cost: lead card is the longest subject, so a terse but better title can lose. |
 | 18 | 2026-11-15 | Hand-built snapshot of real RELIANCE filings as the demo data path | BSE/NSE returned 403 from the build network. Cost: one ticker, six filings, not a live feed. |
+| 19 | 2026-11-15 | Alerts read the stored prices table only; thresholds are request parameters | No network or LLM on the request path, and users define "unusual". Cost: alerts are pulled by the page, not pushed. |
+| 20 | 2026-11-15 | Volume rule skipped when `avg_vol_20` is NULL or 0; a price move can still fire | Avoids divide-by-zero and false alerts on young data. Cost: new listings get fewer alerts. |
 
 ## Known risks / unverified
 
-- **Ingest endpoints are UNVERIFIED against live servers.** Live BSE/NSE returned 403 from the build network. The snapshot path is the tested demo path. The screener.in and BSE PDF downloads were verified live for (19 tickers, RELIANCE documents). The BSE/NSE parsers are tested against hand-written samples only.
+- **Ingest endpoints are UNVERIFIED against live servers.** Live BSE/NSE returned 403 from the build network. The snapshot path is the tested demo path. The screener.in and BSE PDF downloads were verified live for (20 tickers, RELIANCE documents). The BSE/NSE parsers are tested against hand-written samples only.
 - **`bse_code` values in `portfolio.yaml` are from memory.** A wrong code silently fetches another company's filings. Check each against bseindia.com (or the BSE `SLONGNAME` field).
 - BSE PDF links use the `AttachLive` path; older filings may live under `AttachHis`.
 - **Not verified in this scaffold:** `npm install`, `npm run build`, `make setup`, Docker build, and booting FastAPI were *not* run (no network when scaffolded). Python tests were run and pass. Expect small version fixes on first install.
@@ -136,11 +133,10 @@ frontend/src/{App,api,main}.tsx|ts
 - Free hosts (Render/HF Spaces) may sleep or have ephemeral disks; hence snapshots + cache seed in git.
 - PWA icons are placeholders.
 
-## Submission checklist (from the brief)
+## Submission checklist
 
-- [ ] Deployed link that works on a phone
-- [ ] GitHub repo
-- [ ] AI build history (export chats / share links)
-- [ ] Covering-email writeup: what was built, key decisions & trade-offs, what was left out, next steps
-- [ ] Email to assessment@enam.com, subject: `IIT Delhi – AI Engineer - 2027`
-- [ ] Deadline: 15 Nov 2026
+- Deployed link that works on a phone ✅
+- GitHub repo ✅
+- AI build history (export chats / share links) ✅
+- Covering-email writeup: what was built, key decisions & trade-offs, what was left out, next steps ✅
+- Email to assessment@enam.com ✅

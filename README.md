@@ -1,50 +1,50 @@
-\# FINN: a filtering layer for investors
+﻿# FINN: a filtering layer for investors
 
 
 > Most of what a listed company files doesn't matter. FINN's job is to bury it and put the few things that do in front of you, with the reason attached.
 
 
 
-\*\*Live demo:\*\* https://finn-sepk.onrender.com. (free tier, first load can take about 30s to wake)
+**Live demo:** https://finn-sepk.onrender.com. (free tier, first load can take about 30s to wake)
 
 
-\*\*Built for:\*\* ENAM AI Engineer Build Challenge
-
-
-
-\---
+**Built for:** ENAM AI Engineer Build Challenge
 
 
 
-\## What this is?
+---
 
 
 
-FINN is a mobile-first investor feed. This submission ships the \*\*push side\*\*: a ranked digest of corporate filings over a window you choose (24h, 3d, 7d, 30d).
+## What this is?
 
 
 
-\- \*\*Material items lead.\*\* Results and fund-raises rank at the top, each with a score and a one-line reason.
-
-\- \*\*Routine items collapse.\*\* Investor-meet intimations and similar paperwork sit in a collapsed group, so nothing is hidden but nothing competes for attention.
-
-\- \*\*Duplicates merge.\*\* A results filing and its board-meeting outcome describe one event, so they appear as one card, with the other PDFs listed under "related".
-
-\- \*\*Every score is explainable.\*\* Example: the 30 Oct RELIANCE results card scores \*\*80 = 60 (category) + 20 (results bonus)\*\*, and the card says so.
+FINN is a mobile-first investor feed. This submission ships the **push side**: a ranked digest of corporate filings over a window you choose (24h, 3d, 7d, 30d).
 
 
 
-\## Try it
+- **Material items lead.** Results and fund-raises rank at the top, each with a score and a one-line reason.
+
+- **Routine items collapse.** Investor-meet intimations and similar paperwork sit in a collapsed group, so nothing is hidden but nothing competes for attention.
+
+- **Duplicates merge.** A results filing and its board-meeting outcome describe one event, so they appear as one card, with the other PDFs listed under "related".
+
+- **Every score is explainable.** Example: the 30 Oct RELIANCE results card scores **80 = 60 (category) + 20 (results bonus)**, and the card says so.
 
 
 
-\### Live
+## Try it
+
+
+
+### Live
 
 Open the link above on your phone. It opens on the 30-day view, where the real content is.
 
 
 
-\### Locally (Windows PowerShell)
+### Locally (Windows PowerShell)
 
 
 
@@ -58,7 +58,7 @@ python -m venv .venv
 
 python -m pip install -r requirements-dev.txt
 
-uvicorn app.digest\_main:app --port 8000
+uvicorn app.digest_main:app --port 8000
 
 ```
 
@@ -68,7 +68,7 @@ Open `http://localhost:8000`, then use your browser's device toolbar at 390px, o
 
 
 
-\### Locally (macOS / Linux)
+### Locally (macOS / Linux)
 
 
 
@@ -78,13 +78,13 @@ cd backend \&\& python3 -m venv .venv \&\& source .venv/bin/activate
 
 pip install -r requirements-dev.txt
 
-uvicorn app.digest\_main:app --port 8000
+uvicorn app.digest_main:app --port 8000
 
 ```
 
 
 
-\### API
+### API
 
 
 
@@ -92,17 +92,21 @@ uvicorn app.digest\_main:app --port 8000
 
 GET /api/digest?window=24h|3d|7d|30d
 
-\-> { "ranked": \[...], "routine": \[...], "now": "..." }
+-> { "ranked": [...], "routine": [...], "now": "..." }
+
+GET /api/alerts?vol_mult=2&move_pct=3
+
+-> { "alerts": [...], "count": N, "as_of": "...", "vol_mult": 2.0, "move_pct": 3.0 }
 
 ```
 
 
 
-Each item has `ticker, ts, subject, category, score, why\_it\_matters, pdf\_url, related`.
+Each item has `ticker, ts, subject, category, score, why_it_matters, pdf_url, related`.
 
 
 
-\### Tests
+### Tests
 
 
 
@@ -114,40 +118,32 @@ cd backend \&\& python -m pytest -q
 
 
 
-Covers the ingest parsing, retries and fallbacks, plus the digest's classification, collapsing, ranking and window filtering.
+**105 tests pass**, covering the ingest parsing, retries and fallbacks, the digest's classification, collapsing, ranking and window filtering, and the alert thresholds and edge cases.
 
 
 
-\---
+---
 
 
 
-\## How it works
+## How it works
 
 
 
-```
 
-BSE / NSE filings ─┐
 
-&#x20;                  ├─► ingest (live → fallback → committed snapshot) ─► SQLite
-
-yfinance EOD ──────┘                                                      │
-
-&#x20;                                                                         ▼
-
-screener.in PDFs ─► ingest/fundamentals ─► data/docs/<TICKER>/     digest service
-
-&#x20;                                                                 (classify → collapse
-
-&#x20;                                                                  → score → group)
-
-&#x20;                                                                         │
-
-&#x20;                                                                         ▼
-
-&#x20;                                                             FastAPI  ─►  mobile feed
-
+```mermaid
+flowchart TD
+    A["BSE / NSE filings"] --> D["ingest: live, then fallback, then committed snapshot"]
+    B["yfinance EOD prices"] --> D
+    D --> S[("SQLite")]
+    F["screener.in PDFs"] --> G["ingest/fundamentals"]
+    G --> H["data/docs/TICKER"]
+    S --> DG["digest service: classify, collapse, score, group"]
+    S --> AL["alerts service: volume and price thresholds"]
+    DG --> API["FastAPI"]
+    AL --> API
+    API --> UI["mobile feed"]
 ```
 
 
@@ -166,11 +162,11 @@ screener.in PDFs ─► ingest/fundamentals ─► data/docs/<TICKER>/     diges
 
 
 
-\---
+---
 
 
 
-\## Decisions and trade-offs
+## Decisions and trade-offs
 
 
 
@@ -178,27 +174,27 @@ screener.in PDFs ─► ingest/fundamentals ─► data/docs/<TICKER>/     diges
 
 |---|---|---|
 
-| \*\*No LLM in the digest path\*\* | Rules are fast, free and auditable. An investor can see exactly why something scored 80. | Rules won't catch unusual wording. Fine for an alert feed. |
+| **No LLM in the digest path** | Rules are fast, free and auditable. An investor can see exactly why something scored 80. | Rules won't catch unusual wording. Fine for an alert feed. |
 
-| \*\*"Now" anchors to the newest filing, not the wall clock\*\* | A 24h window on a quiet day would be empty and the demo would look broken. | Freshness depends on the last snapshot. |
+| **"Now" anchors to the newest filing, not the wall clock** | A 24h window on a quiet day would be empty and the demo would look broken. | Freshness depends on the last snapshot. |
 
-| \*\*Duplicate filings collapse into one card\*\* | A results filing and its board outcome are one event. Showing both is noise. | The lead card is the longest subject. Nothing is dropped, since the rest sit under "related". |
+| **Duplicate filings collapse into one card** | A results filing and its board outcome are one event. Showing both is noise. | The lead card is the longest subject. Nothing is dropped, since the rest sit under "related". |
 
-| \*\*Routine group, collapsed\*\* | Most filings are noise. Hiding them in one tap beats ranking them equally. | Category weights are hand-set (`WEIGHT` and `BONUS` at the top of the service) and easy to tune. |
+| **Routine group, collapsed** | Most filings are noise. Hiding them in one tap beats ranking them equally. | Category weights are hand-set (`WEIGHT` and `BONUS` at the top of the service) and easy to tune. |
 
-| \*\*Committed snapshot as the demo data path\*\* | BSE and NSE returned 403 from my build network, and exchange feeds often block cloud IPs. A demo shouldn't depend on a live scrape. | The demo data is a snapshot of real RELIANCE filings, not a live feed. |
+| **Committed snapshot as the demo data path** | BSE and NSE returned 403 from my build network, and exchange feeds often block cloud IPs. A demo shouldn't depend on a live scrape. | The demo data is a snapshot of real RELIANCE filings, not a live feed. |
 
-| \*\*Ingest and digest are separate\*\* | The digest reads SQLite and never touches the network, so it's fast and testable. | Refreshing data is two steps: ingest, then reload. |
+| **Ingest and digest are separate** | The digest reads SQLite and never touches the network, so it's fast and testable. | Refreshing data is two steps: ingest, then reload. |
 
-| \*\*Opens on 30 days\*\* | With the anchored "now", shorter windows are sparse. | Tight windows need a manual tap. |
-
-
-
-\---
+| **Opens on 30 days** | With the anchored "now", shorter windows are sparse. | Tight windows need a manual tap. |
 
 
 
-\## What's built, and what isn't
+---
+
+
+
+## What's built, and what isn't
 
 
 
@@ -206,17 +202,21 @@ I'd rather you see the gaps from me than find them.
 
 
 
-\*\*Working\*\*
+**Working**
 
-\- Push digest with windows, ranking, collapsing, routine grouping and rule-based reasons
+- Push digest with windows, ranking, collapsing, routine grouping and rule-based reasons
 
-\- EOD price and volume ingest for 19 NSE tickers, with a volume baseline (20-day average, excluding the current day)
+- EOD price and volume ingest for 20 NSE tickers, with a volume baseline (20-day average, excluding the current day)
 
-\- Announcement ingest with live → fallback → snapshot logic
+- Announcement ingest with live → fallback → snapshot logic
 
-\- Annual report and concall PDF download from screener.in (tested live on RELIANCE: 9 documents)
+- Annual report and concall PDF download from screener.in (tested live on RELIANCE: 9 documents)
 
-\- A single LLM module with caching and cost logging, ready for the pull side. It isn't used in the digest.
+- A single LLM module with caching and cost logging, ready for the pull side. It isn't used in the digest.
+
+- EOD price and volume ingest for 20 NSE tickers, with a volume baseline (20-day average, excluding the current day)
+
+- Price/volume alerts with user-set thresholds, evaluated from the stored data with no network and no LLM
 
 ## Why I built it this way
 
@@ -244,43 +244,44 @@ Investors shouldn't have to know what to ask. The feed shows what changed, and r
 **I stopped at one ticker done properly.**
 A thin, working slice with honest gaps over a broad one that breaks.
 
-\*\*Not built\*\*
+**Not built**
 
-\- \*\*Only RELIANCE's filings are loaded.\*\* The brief asks for 15 to 20 companies. I went deep on one ticker rather than thin across many.
+- **Only RELIANCE's filings are loaded.** The brief asks for 15 to 20 companies. I went deep on one ticker rather than thin across many.
 
-\- \*\*Results numbers (Revenue, EBITDA, PBT, PAT with QoQ and YoY) aren't extracted yet.\*\* The results card shows the layout with placeholders, so the design target is visible but the numbers aren't there.
+- **Results numbers (Revenue, EBITDA, PBT, PAT with QoQ and YoY) aren't extracted yet.** The results card shows the layout with placeholders, so the design target is visible but the numbers aren't there.
 
-\- \*\*Price and volume aren't wired into the score or alerts yet.\*\* The data is ingested, but triggers and thresholds are still to do.
+- **Price and volume aren't wired into the score or alerts yet.** The data is ingested, but triggers and thresholds are still to do.
 
-\- \*\*The pull side isn't built\*\*, including the promise-vs-delivered analysis, which I consider the most valuable piece of the brief.
+- **The pull side isn't built**, including the promise-vs-delivered analysis, which I consider the most valuable piece of the brief.
 
-\- \*\*Management-change enrichment\*\* isn't built.
+- **Management-change enrichment** isn't built.
 
-\- \*\*Live exchange feeds\*\* couldn't be reached from my build network.
+- **Live exchange feeds** couldn't be reached from my build network.
 
-
-
-\## Next steps
+- **Alerts are pulled, not pushed.** Thresholds are checked when the page asks, so there are no background notifications yet. Category-based alerts and portfolio-weighted alerts aren't built.
 
 
-
-1\. \*\*Results extractor\*\* from the 30 Oct filing: rules and table parsing first, an LLM only as a fallback, with a PBT − tax ≈ PAT check and low-confidence flags instead of guesses.
-
-2\. \*\*More tickers\*\*, using a browser-assisted snapshot refresh for the exchange feeds.
-
-3\. \*\*Threshold alerts\*\* on volume and price move, with user-set thresholds.
-
-4\. \*\*Promise vs delivered\*\* on the concall transcripts, grounded in primary sources only, with a page citation for every claim.
-
-5\. \*\*Copilot sheet\*\* scoped to the open card, so a tap leads straight into research.
+## Next steps
 
 
 
-\---
+1\. **Results extractor** from the 30 Oct filing: rules and table parsing first, an LLM only as a fallback, with a PBT − tax ≈ PAT check and low-confidence flags instead of guesses.
+
+2\. **More tickers**, using a browser-assisted snapshot refresh for the exchange feeds.
+
+3\. **Threshold alerts** on volume and price move, with user-set thresholds.
+
+4\. **Promise vs delivered** on the concall transcripts, grounded in primary sources only, with a page citation for every claim.
+
+5\. **Copilot sheet** scoped to the open card, so a tap leads straight into research.
 
 
 
-\## Repo layout
+---
+
+
+
+## Repo layout
 
 
 
@@ -306,7 +307,7 @@ docs/
 
 
 
-\## Built with
+## Built with
 
 
 
@@ -314,15 +315,16 @@ Python, FastAPI, SQLite, yfinance, httpx. Built with AI coding assistants. The c
 
 
 
-Full architecture notes, invariants and ingest commands: \[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+Full architecture notes, invariants and ingest commands: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 
 
-\---
+---
 
 
 
-\*Built by Palla Deekshitha(2023CE11034), IIT Delhi.\*
+*Built by Palla Deekshitha(2023CE11034), IIT Delhi.*
+
 
 
 

@@ -4,8 +4,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FINN digest</title>
 <style>
-:root{--bg:#eef1f4;--card:#fff;--ink:#101820;--mute:#5b6773;--line:#d9dfe5;--navy:#12355b;--tint:#dbe6f3}
-@media(prefers-color-scheme:dark){:root{--bg:#0d1218;--card:#151c24;--ink:#e8edf2;--mute:#93a0ad;--line:#25303b;--navy:#8fb6ea;--tint:#1d2c3f}}
+:root{--bg:#eef1f4;--card:#fff;--ink:#101820;--mute:#5b6773;--line:#d9dfe5;--navy:#12355b;--tint:#dbe6f3;--up:#0a7d4f;--dn:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1218;--card:#151c24;--ink:#e8edf2;--mute:#93a0ad;--line:#25303b;--navy:#8fb6ea;--tint:#1d2c3f;--up:#4cc38a;--dn:#f2837a}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:390px;margin:0 auto;padding:18px 14px 48px}
@@ -35,9 +35,28 @@ summary{cursor:pointer;color:var(--mute);padding:4px 0}
 .routine .card{margin:0;border:0;border-top:1px solid var(--line);border-radius:0;background:transparent;padding:10px 0}
 .routine .card:first-of-type{border-top:0}
 .empty{color:var(--mute);text-align:center;padding:28px 0;font-size:14px}
+.alerts{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin:14px 0 22px}
+.ahead{display:flex;justify-content:space-between;align-items:baseline}.ahead b{font-size:15px}
+.cnt{font-size:13px;color:var(--mute)}.cnt.on{color:var(--navy);font-weight:700}
+.sl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin-top:10px;font-size:12px;color:var(--mute)}
+.sl output{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+.sl input{grid-column:1/-1;width:100%;margin:2px 0 0;accent-color:var(--navy)}
+.arow{padding:8px 0;border-top:1px solid var(--line);font-size:13px}.arow:first-of-type{margin-top:10px}
+.arow .l{display:flex;justify-content:space-between;gap:8px}.arow small{display:block;color:var(--mute);font-size:12px}
+.up{color:var(--up)}.dn{color:var(--dn)}
+h3.sec{font-size:16px;margin:0}
 </style>
 <main>
-  <h1>Digest</h1>
+  <h1>FINN</h1>
+  <section class="alerts" aria-label="Alerts">
+    <div class="ahead"><b>Alerts</b><span class="cnt" id="cnt"></span></div>
+    <div class="sl"><label for="vm">Volume at least</label><output id="vmo"></output>
+      <input id="vm" type="range" min="1" max="5" step="0.5" value="2"></div>
+    <div class="sl"><label for="mp">Daily move at least</label><output id="mpo"></output>
+      <input id="mp" type="range" min="0.5" max="10" step="0.5" value="3"></div>
+    <div id="alist"></div>
+  </section>
+  <h3 class="sec">Digest</h3>
   <div class="asof" id="asof"></div>
   <div class="win" id="win"></div>
   <div id="feed"></div>
@@ -64,7 +83,7 @@ async function load(w) {
   const feed = document.getElementById("feed");
   try {
     const d = await (await fetch(`/api/digest?window=${w}`)).json();
-    document.getElementById("asof").textContent = d.now ? `Up to ${fmt(d.now)} IST` : "";
+    document.getElementById("asof").textContent = d.now ? `Filings up to ${fmt(d.now)} IST, checked ${fmt(new Date())}` : "";
     feed.innerHTML =
       (d.ranked.length ? d.ranked.map(card).join("") : `<div class="empty">Nothing material in this window.${d.latest_material ? `<br>Latest material filing: ${fmtDay(d.latest_material.ts)}, ${esc(d.latest_material.category.replace(/_/g," "))}` : ""}</div>`) +
       (d.routine.length ? `<details class="routine"><summary>Routine (${d.routine.length})</summary>${d.routine.map(card).join("")}</details>` : "");
@@ -75,5 +94,32 @@ async function load(w) {
 
 document.getElementById("win").innerHTML = WINDOWS.map(([k, l]) => `<button data-w="${k}">${l}</button>`).join("");
 document.getElementById("win").onclick = e => e.target.dataset.w && load(e.target.dataset.w);
+
+let aSeq = 0, aTimer;
+async function loadAlerts() {
+  const seq = ++aSeq, vm = document.getElementById("vm"), mp = document.getElementById("mp");
+  document.getElementById("vmo").textContent = vm.value + "x average";
+  document.getElementById("mpo").textContent = mp.value + "%";
+  const cnt = document.getElementById("cnt"), list = document.getElementById("alist");
+  try {
+    const r = await fetch(`/api/alerts?vol_mult=${vm.value}&move_pct=${mp.value}`);
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    if (seq !== aSeq) return; // a newer slider position already won
+    cnt.className = "cnt" + (d.count ? " on" : "");
+    cnt.textContent = d.as_of === null ? "No price data" : d.count ? `${d.count} unusual move${d.count > 1 ? "s" : ""}` : "No unusual moves";
+    list.innerHTML = d.alerts.map(a => {
+      const m = a.move_pct, cls = m == null ? "" : m >= 0 ? "up" : "dn";
+      return `<div class="arow"><div class="l"><b>${esc(a.ticker)}</b><span>${a.close == null ? "n/a" : a.close.toFixed(2)} <span class="${cls}">${m == null ? "" : (m > 0 ? "+" : "") + m.toFixed(1) + "%"}</span></span></div><small>${esc(a.reason)}, ${esc(a.date)}</small></div>`;
+    }).join("");
+  } catch (e) {
+    if (seq === aSeq) { cnt.className = "cnt"; cnt.textContent = "Could not load alerts"; list.innerHTML = ""; }
+  }
+}
+["vm", "mp"].forEach(id => document.getElementById(id).addEventListener("input", () => {
+  clearTimeout(aTimer); aTimer = setTimeout(loadAlerts, 150);
+  document.getElementById(id === "vm" ? "vmo" : "mpo").textContent = document.getElementById(id).value + (id === "vm" ? "x average" : "%");
+}));
+loadAlerts();
 load("30d"); // demo data is a month old relative to its newest row, so open wide
 </script>

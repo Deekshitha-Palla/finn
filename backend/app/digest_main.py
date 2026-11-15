@@ -4,8 +4,10 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.routers.alerts import router as alerts_router
 from app.routers.digest import router
 
 app = FastAPI(title="FINN digest")
 app.include_router(router)
+app.include_router(alerts_router)
 app.mount("/", StaticFiles(directory=Path(__file__).resolve().parents[2] / "frontend" / "feed", html=True))
